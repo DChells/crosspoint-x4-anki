@@ -1,0 +1,7 @@
+{
+  "name": "Anki X4",
+  "version": "0.1.0",
+  "description": "Anki flashcards for CrossPoint X4",
+  "author": "Anki Team",
+  "minFirmware": "0.16.0"
+}
