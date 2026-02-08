@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sql.js Proof of Concept</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .results {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #e9ecef;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #queryInput {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        #fileInput {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>sql.js Proof of Concept</h1>
+    <p>This PoC demonstrates loading sql.js from local files and using it to query SQLite databases.</p>
+
+    <div id="status"></div>
+
+    <div id="controls" style="display: none;">
+        <h2>Database Controls</h2>
+        <input type="file" id="fileInput" accept=".db,.sqlite,.sqlite3">
+        <br>
+        <input type="text" id="queryInput" value="SELECT name FROM sqlite_master WHERE type='table'">
+        <button onclick="executeQuery()">Execute Query</button>
+        <button onclick="runTestQuery()">Run Test Query</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script src="../lib/sql-wasm.js"></script>
+    <script>
+        let db = null;
+        const statusDiv = document.getElementById('status');
+        const controlsDiv = document.getElementById('controls');
+        const resultsDiv = document.getElementById('results');
+        const fileInput = document.getElementById('fileInput');
+        const queryInput = document.getElementById('queryInput');
+
+        function showStatus(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function showResults(results, columns) {
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = '<div class="results"><p>No results found.</p></div>';
+                return;
+            }
+
+            let html = '<div class="results"><h3>Query Results</h3><table><thead><tr>';
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            results.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    html += `<td>${row[col] !== null ? row[col] : 'NULL'}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        async function initSqlJs() {
+            try {
+                showStatus('Initializing sql.js...', 'info');
+
+                const SQL = await initSqlJs({
+                    locateFile: file => `../lib/${file}`
+                });
+
+                showStatus('sql.js loaded successfully!', 'success');
+                controlsDiv.style.display = 'block';
+
+                fileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        showStatus(`Loading database: ${file.name}...`, 'info');
+                        const arrayBuffer = await file.arrayBuffer();
+                        const u8array = new Uint8Array(arrayBuffer);
+                        db = new SQL.Database(u8array);
+                        showStatus(`Database loaded successfully: ${file.name}`, 'success');
+                        resultsDiv.innerHTML = '';
+                    } catch (err) {
+                        showStatus(`Error loading database: ${err.message}`, 'error');
+                        console.error(err);
+                    }
+                });
+
+            } catch (err) {
+                showStatus(`Error initializing sql.js: ${err.message}`, 'error');
+                console.error(err);
+            }
+        }
+
+        function executeQuery() {
+            if (!db) {
+                showStatus('Please load a database first.', 'error');
+                return;
+            }
+
+            const query = queryInput.value.trim();
+            if (!query) {
+                showStatus('Please enter a SQL query.', 'error');
+                return;
+            }
+
+            try {
+                showStatus(`Executing query: ${query}`, 'info');
+                const stmt = db.prepare(query);
+                stmt.bind();
+
+                const results = [];
+                const columns = stmt.getColumnNames();
+
+                while (stmt.step()) {
+                    results.push(stmt.getAsObject());
+                }
+
+                stmt.free();
+                showResults(results, columns);
+                showStatus(`Query executed successfully. ${results.length} rows returned.`, 'success');
+            } catch (err) {
+                showStatus(`Query error: ${err.message}`, 'error');
+                console.error(err);
+            }
+        }
+
+        function runTestQuery() {
+            if (!db) {
+                showStatus('Creating in-memory database for testing...', 'info');
+                try {
+                    db = new SQL.Database();
+                    db.run('CREATE TABLE test (id INTEGER, name TEXT)');
+                    db.run('INSERT INTO test VALUES (1, "Alice")');
+                    db.run('INSERT INTO test VALUES (2, "Bob")');
+                    db.run('INSERT INTO test VALUES (3, "Charlie")');
+                    showStatus('Test database created successfully!', 'success');
+                } catch (err) {
+                    showStatus(`Error creating test database: ${err.message}`, 'error');
+                    console.error(err);
+                    return;
+                }
+            }
+
+            queryInput.value = 'SELECT * FROM test';
+            executeQuery();
+        }
+
+        initSqlJs();
+    </script>
+</body>
+</html>

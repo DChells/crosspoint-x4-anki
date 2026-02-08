@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anki Deck Upload</title>
+    <style>
+        /* E-ink Friendly High Contrast Design */
+        :root {
+            --bg: #ffffff;
+            --fg: #000000;
+            --border: 2px solid #000000;
+        }
+
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        h1 {
+            text-transform: uppercase;
+            border-bottom: var(--border);
+            padding-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .upload-area { 
+            border: 2px dashed #000; 
+            padding: 40px; 
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .upload-area:hover {
+            background-color: #f4f4f4;
+            border-style: solid;
+        }
+
+        .upload-area p {
+            font-size: 1.1em;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        /* Overlay file input */
+        input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        button { 
+            width: 100%;
+            padding: 15px; 
+            font-size: 16px; 
+            font-family: inherit;
+            font-weight: 900;
+            background: #fff;
+            color: #000;
+            border: var(--border);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:disabled { 
+            opacity: 0.3; 
+            border-style: dotted;
+            cursor: not-allowed;
+        }
+
+        button:not(:disabled):hover {
+            background: #000;
+            color: #fff;
+        }
+        
+        #progress { 
+            display: none; 
+            margin-top: 30px;
+            border: var(--border);
+            padding: 15px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        progress {
+            width: 100%;
+            height: 25px;
+            -webkit-appearance: none;
+            appearance: none;
+            border: 1px solid #000;
+        }
+
+        /* Progress styling */
+        progress::-webkit-progress-bar { background-color: #fff; }
+        progress::-webkit-progress-value { background-color: #000; }
+        progress::-moz-progress-bar { background-color: #000; }
+
+        #status { 
+            margin-top: 20px; 
+            font-weight: bold;
+            min-height: 20px;
+        }
+        
+        .success { text-decoration: underline; }
+        .error { border-left: 4px solid #000; padding-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Upload Anki Deck</h1>
+    
+    <div class="upload-area">
+        <input type="file" id="fileInput" accept=".apkg">
+        <p id="fileLabel">SELECT .APKG FILE</p>
+    </div>
+    
+    <button id="uploadBtn" disabled>UPLOAD DECK</button>
+    
+    <div id="progress">
+        <div class="progress-header">
+            <span>STATUS: PROCESSING</span>
+            <span id="progressText">0%</span>
+        </div>
+        <progress value="0" max="100"></progress>
+    </div>
+    
+    <div id="status"></div>
+    
+    <script src="lib/jszip.min.js"></script>
+    <script src="lib/sql-wasm.js"></script>
+    
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progress = document.getElementById('progress');
+        const progressText = document.getElementById('progressText');
+        const status = document.getElementById('status');
+        const fileLabel = document.getElementById('fileLabel');
+        const progressBar = document.querySelector('progress');
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                const file = fileInput.files[0];
+                
+                if (!file.name.toLowerCase().endsWith('.apkg')) {
+                    status.innerHTML = '<div class="error">INVALID FILE TYPE. PLEASE USE .APKG</div>';
+                    uploadBtn.disabled = true;
+                    fileLabel.textContent = "INVALID FILE";
+                    return;
+                }
+
+                fileLabel.textContent = `FILE: ${file.name}`;
+                uploadBtn.disabled = false;
+                status.textContent = '';
+            } else {
+                fileLabel.textContent = "SELECT .APKG FILE";
+                uploadBtn.disabled = true;
+            }
+        });
+        
+        uploadBtn.addEventListener('click', () => {
+            // TODO: Implement in Task 8
+            console.log('Upload clicked');
+            
+            // Visual feedback for now
+            if (fileInput.files.length) {
+                status.textContent = "INITIALIZING UPLOAD...";
+            }
+        });
+    </script>
+</body>
+</html>

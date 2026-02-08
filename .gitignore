@@ -1,0 +1,20 @@
+# Build artifacts
+firmware/.pio/
+firmware/lib/GfxRenderer/include/Bitmap.hpp
+firmware/lib/GfxRenderer/include/BitmapHelpers.hpp
+
+# Python virtual environment
+.venv/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Sisyphus agent state
+.sisyphus/
+
+# OS
+.DS_Store
+Thumbs.db
